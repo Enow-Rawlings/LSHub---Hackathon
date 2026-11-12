@@ -8,6 +8,7 @@ import ScoreBreakdown from '../components/ScoreBreakdown';
 import Spinner from '../components/Spinner';
 import Toast from '../components/Toast';
 import EmptyState from '../components/EmptyState';
+import { Camera, Upload } from 'lucide-react';
 
 const TRADES = ['electrician','plumber','tailor','mechanic','mason','hairdresser','carpenter'];
 const TOWNS  = ['Buea','Molyko','Limbe','Tiko','Kumba','Douala','Yaounde','Bamenda','Bafoussam'];
@@ -28,6 +29,19 @@ export default function WorkerDashboard({ lang }) {
   const [toast,    setToast]    = useState(null);
   const [form,     setForm]     = useState(null);
   const [codeInputs, setCodeInputs] = useState({});
+  const fileRef = React.useRef(null);
+
+  const uploadPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const res = await workersApi.uploadPhoto(file);
+      setProfile(res.profile);
+      setToast({ type: 'success', message: 'Photo uploaded!' });
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
+    }
+  };
 
   const loadAll = useCallback(async () => {
     try {
@@ -120,6 +134,22 @@ export default function WorkerDashboard({ lang }) {
       {/* Score summary */}
       {profile && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col items-center gap-4">
+          {/* Avatar / photo upload */}
+          <div className="relative">
+            {profile.photos?.[0]
+              ? <img src={profile.photos[0]} alt="Profile" className="w-20 h-20 rounded-2xl object-cover" />
+              : <div className="w-20 h-20 rounded-2xl bg-emerald-100 flex items-center justify-center text-2xl font-bold text-emerald-700">{user.name?.charAt(0)}</div>
+            }
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-md"
+              title="Upload photo"
+            >
+              <Camera className="w-4 h-4" />
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={uploadPhoto} />
+          </div>
+
           <TrustBadge level={profile.trustLevel} score={profile.trustScore} />
           <ScoreRing score={profile.trustScore} level={profile.trustLevel} size={110} />
           <ScoreBreakdown breakdown={profile.scoreBreakdown} />

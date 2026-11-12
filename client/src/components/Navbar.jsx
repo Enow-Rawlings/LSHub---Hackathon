@@ -46,7 +46,13 @@ export default function Navbar({ lang, setLang }) {
               <Link to="/register" className="bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold px-4 py-2 rounded-lg">{t(lang, 'register')}</Link>
             </>
           ) : (
-            <button onClick={handleLogout} className="text-sm text-slate-500 hover:text-red-500 font-medium">{t(lang, 'logout')}</button>
+            <div className="flex items-center gap-2">
+              {user.avatar
+                ? <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+                : <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-bold text-emerald-700">{user.name?.charAt(0)}</div>
+              }
+              <button onClick={handleLogout} className="text-sm text-slate-500 hover:text-red-500 font-medium">{t(lang, 'logout')}</button>
+            </div>
           )}
           {/* Language switcher */}
           <select

@@ -42,8 +42,11 @@ export default function WorkerPassport({ lang }) {
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
       {/* Header */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col items-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center text-2xl font-bold text-emerald-700">
-          {data.name.charAt(0)}
+        <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center text-2xl font-bold text-emerald-700 overflow-hidden">
+          {data.avatar
+            ? <img src={data.avatar} alt={data.name} className="w-full h-full object-cover" />
+            : data.name.charAt(0)
+          }
         </div>
         <div className="text-center">
           <h1 className="text-xl font-bold text-slate-800">{data.name}</h1>

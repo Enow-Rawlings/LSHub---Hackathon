@@ -107,8 +107,9 @@ function computeTrustScore({
  * @param {string} [reason] - why the recalc was triggered (for the audit log)
  */
 async function recalculateWorker(workerId, reason = 'manual') {
-  const profile = await WorkerProfile.findById(workerId).populate('user');
+  const profile = await WorkerProfile.findById(workerId).populate('user', 'name createdAt isFlagged');
   if (!profile) throw new Error(`WorkerProfile ${workerId} not found`);
+  if (!profile.user) throw new Error(`WorkerProfile ${workerId} has no linked user`);
 
   const user = profile.user;
   const accountAgeDays = (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24);
@@ -140,32 +141,23 @@ async function recalculateWorker(workerId, reason = 'manual') {
     scoreMap[vp.user.toString()] = vp.trustScore;
   }
 
-  // Check for reciprocal vouches: does this worker's user vouch back for each voucher's worker?
-  // We need: Vouch where fromUser = profile.user AND toWorker = voucher's WorkerProfile
+  // Check for reciprocal vouches in a SINGLE query instead of one per voucher
   const voucherWorkerProfiles = voucherProfiles.reduce((m, vp) => {
     m[vp.user.toString()] = vp._id.toString();
     return m;
   }, {});
 
-  const vouches = await Promise.all(
-    rawVouches.map(async (v) => {
-      const vUserId     = v.fromUser._id.toString();
-      const vs          = scoreMap[vUserId] !== undefined ? scoreMap[vUserId] : VERIFIER_DEFAULT_SCORE;
-      const vWorkerPId  = voucherWorkerProfiles[vUserId];
-      let isReciprocal  = false;
+  // Get all workerProfile IDs that this worker has vouched for (batch)
+  const workerVouchTargets = await Vouch.find({ fromUser: profile.user._id }).select('toWorker');
+  const workerVouchedSet   = new Set(workerVouchTargets.map(v => v.toWorker.toString()));
 
-      if (vWorkerPId) {
-        // Does the original worker also vouch for the voucherWorker?
-        const reciprocal = await Vouch.findOne({
-          fromUser: profile.user._id,
-          toWorker: vWorkerPId,
-        });
-        isReciprocal = !!reciprocal;
-      }
-
-      return { voucherScore: vs, isReciprocal };
-    })
-  );
+  const vouches = rawVouches.map((v) => {
+    const vUserId    = v.fromUser._id.toString();
+    const vs         = scoreMap[vUserId] !== undefined ? scoreMap[vUserId] : VERIFIER_DEFAULT_SCORE;
+    const vWorkerPId = voucherWorkerProfiles[vUserId];
+    const isReciprocal = vWorkerPId ? workerVouchedSet.has(vWorkerPId) : false;
+    return { voucherScore: vs, isReciprocal };
+  });
 
   // Distinct skill checks (by skill name)
   const skillChecks = await SkillCheck.find({ worker: workerId }).select('skill');

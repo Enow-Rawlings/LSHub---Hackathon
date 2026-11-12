@@ -5,6 +5,7 @@ import { auth } from '../api';
 import { useAuth } from '../AuthContext';
 import { t } from '../i18n';
 import Toast from '../components/Toast';
+import GoogleButton from '../components/GoogleButton';
 
 const ROLES = ['customer', 'worker', 'verifier'];
 
@@ -110,6 +111,21 @@ export default function Register({ lang }) {
           {t(lang, 'alreadyAccount')}{' '}
           <Link to="/login" className="text-emerald-600 font-medium">{t(lang, 'loginHere')}</Link>
         </p>
+
+        {/* Google sign-in - shown for worker and customer only */}
+        {form.role !== 'verifier' && (
+          <>
+            <div className="flex items-center gap-3 my-4">
+              <div className="flex-1 h-px bg-slate-100" />
+              <span className="text-xs text-slate-400">or</span>
+              <div className="flex-1 h-px bg-slate-100" />
+            </div>
+            <GoogleButton
+              role={form.role}
+              onError={(msg) => setToast({ type: 'error', message: msg })}
+            />
+          </>
+        )}
       </div>
     </div>
   );

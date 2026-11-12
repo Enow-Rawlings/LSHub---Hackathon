@@ -51,9 +51,10 @@ async function request(path, options = {}) {
 
 // Auth
 export const auth = {
-  register: (body)        => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
-  login:    (body)        => request('/auth/login',    { method: 'POST', body: JSON.stringify(body) }),
-  verifyOtp:(body)        => request('/auth/verify-otp',{ method: 'POST', body: JSON.stringify(body) }),
+  register:   (body)       => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+  login:      (body)       => request('/auth/login',    { method: 'POST', body: JSON.stringify(body) }),
+  verifyOtp:  (body)       => request('/auth/verify-otp',{ method: 'POST', body: JSON.stringify(body) }),
+  google:     (body)       => request('/auth/google',   { method: 'POST', body: JSON.stringify(body) }),
 };
 
 // Workers
@@ -63,6 +64,21 @@ export const workers = {
   updateProfile: (body)   => request('/workers/me',        { method: 'PUT',  body: JSON.stringify(body) }),
   search:        (params) => request('/workers/search?' + new URLSearchParams(params)),
   getPassport:   (id)     => request(`/workers/passport/${id}`),
+  uploadPhoto:   (file)   => {
+    const token = getToken();
+    const form  = new FormData();
+    form.append('photo', file);
+    // Can't use the request() helper here because we need multipart/form-data (no Content-Type header)
+    return fetch(`${BASE}/workers/me/photo`, {
+      method:  'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body:    form,
+    }).then(async r => {
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) { const e = new Error(data.error || 'Upload failed'); e.status = r.status; throw e; }
+      return data;
+    });
+  },
 };
 
 // Jobs

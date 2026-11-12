@@ -13,6 +13,7 @@ const validate      = require('../middleware/validate');
 const { findWorkers } = require('../services/matching');
 const TOWNS         = require('../config/towns');
 const { TRADES }    = require('../models/WorkerProfile');
+const { upload }    = require('../config/cloudinary');
 
 const profileSchema = z.object({
   trade:    z.enum(TRADES),
@@ -124,7 +125,7 @@ router.get('/search', async (req, res, next) => {
 // GET /api/passport/:workerId - public Trust Passport
 router.get('/passport/:workerId', async (req, res, next) => {
   try {
-    const profile = await WorkerProfile.findById(req.params.workerId).populate('user', 'name createdAt');
+    const profile = await WorkerProfile.findById(req.params.workerId).populate('user', 'name createdAt avatar');
     if (!profile) return res.status(404).json({ error: 'Worker not found' });
 
     // Vouches: show verifier name and comment but not phone/email
@@ -151,6 +152,7 @@ router.get('/passport/:workerId', async (req, res, next) => {
     res.json({
       workerId:     profile._id,
       name:         profile.user.name,
+      avatar:       profile.user.avatar || '',
       trade:        profile.trade,
       town:         profile.town,
       bio:          profile.bio,
@@ -181,6 +183,48 @@ router.get('/passport/:workerId', async (req, res, next) => {
         description:   j.description,
       })),
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/workers/me/photo - upload a profile photo (worker only)
+// Uses Cloudinary via multer middleware. Returns the uploaded image URL.
+router.post('/me/photo', authenticate, requireRole('worker'), upload.single('photo'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image file provided' });
+
+    const photoUrl = req.file.path; // Cloudinary secure URL
+
+    // Save URL to both WorkerProfile.photos and User.avatar
+    const profile = await WorkerProfile.findOneAndUpdate(
+      { user: req.user.id },
+      { $addToSet: { photos: photoUrl } },
+      { new: true }
+    );
+    if (!profile) return res.status(404).json({ error: 'Worker profile not found' });
+
+    // Also set as the user's avatar
+    await require('../models/User').findByIdAndUpdate(req.user.id, { avatar: photoUrl });
+
+    res.json({ url: photoUrl, profile });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/workers/me/photo - remove a photo by URL
+router.delete('/me/photo', authenticate, requireRole('worker'), async (req, res, next) => {
+  try {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: 'url is required' });
+
+    await WorkerProfile.findOneAndUpdate(
+      { user: req.user.id },
+      { $pull: { photos: url } }
+    );
+
+    res.json({ message: 'Photo removed' });
   } catch (err) {
     next(err);
   }
