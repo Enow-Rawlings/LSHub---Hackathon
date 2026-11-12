@@ -30,7 +30,11 @@ const codeSchema = z.object({
 // The 4-digit code is ONLY returned to the customer who owns the job and only when status is 'accepted'.
 function serializeJob(job, callerId, callerRole) {
   const obj = job.toObject ? job.toObject() : { ...job };
-  const isCustomer = callerRole === 'customer' && obj.customer?.toString() === callerId;
+  // customer may be a populated object or a plain ObjectId - extract _id either way
+  const customerId = obj.customer?._id
+    ? obj.customer._id.toString()
+    : obj.customer?.toString();
+  const isCustomer = callerRole === 'customer' && customerId === callerId;
   if (!isCustomer || obj.status !== 'accepted') {
     delete obj.code;
   }
@@ -76,7 +80,9 @@ router.get('/mine', authenticate, async (req, res, next) => {
     }
 
     // Populate worker profile and customer name (no sensitive fields)
+    // +code must be explicitly selected since it has select:false on the model
     const jobs = await query
+      .select('+code')
       .populate({ path: 'worker', populate: { path: 'user', select: 'name' } })
       .populate('customer', 'name');
 
