@@ -8,13 +8,15 @@ import Toast from '../components/Toast';
 import GoogleButton from '../components/GoogleButton';
 
 const ROLES = ['customer', 'worker', 'verifier'];
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const googleAvailable   = GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.startsWith('your_');
 
 export default function Register({ lang }) {
   const { login } = useAuth();
   const navigate  = useNavigate();
   const [form, setForm] = useState({ name: '', phone: '', password: '', role: 'customer', inviteCode: '' });
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [toast,   setToast]   = useState(null);
 
   const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }));
 
@@ -26,7 +28,7 @@ export default function Register({ lang }) {
       if (form.role !== 'verifier') delete payload.inviteCode;
       const data = await auth.register(payload);
       login(data.user, data.token);
-      const dest = { worker: '/worker', verifier: '/verifier', customer: '/find' };
+      const dest = { worker: '/worker', verifier: '/verifier', customer: '/find', admin: '/admin' };
       navigate(dest[data.user.role] || '/');
     } catch (err) {
       setToast({ type: 'error', message: err.message || 'Registration failed' });
@@ -38,7 +40,9 @@ export default function Register({ lang }) {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
+
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        {/* Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-emerald-50 rounded-2xl mb-3">
             <Shield className="w-6 h-6 text-emerald-500" />
@@ -53,13 +57,29 @@ export default function Register({ lang }) {
             <button
               key={r} type="button"
               onClick={() => setForm(f => ({ ...f, role: r }))}
-              className={`flex-1 py-2.5 text-xs font-semibold capitalize transition-colors min-h-[44px] ${form.role === r ? 'bg-emerald-500 text-white' : 'bg-white text-slate-600'}`}
+              className={`flex-1 py-2.5 text-xs font-semibold capitalize transition-colors min-h-[44px] ${form.role === r ? 'bg-emerald-500 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
             >
               {t(lang, r)}
             </button>
           ))}
         </div>
 
+        {/* Google sign-in — only for customer and worker */}
+        {googleAvailable && form.role !== 'verifier' && (
+          <>
+            <GoogleButton
+              role={form.role}
+              onError={msg => setToast({ type: 'error', message: msg })}
+            />
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px bg-slate-100" />
+              <span className="text-xs text-slate-400 font-medium">or sign up with phone</span>
+              <div className="flex-1 h-px bg-slate-100" />
+            </div>
+          </>
+        )}
+
+        {/* Phone registration form */}
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">{t(lang, 'name')}</label>
@@ -88,6 +108,7 @@ export default function Register({ lang }) {
               className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 min-h-[48px]"
             />
           </div>
+
           {form.role === 'verifier' && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">{t(lang, 'inviteCode')}</label>
@@ -102,15 +123,17 @@ export default function Register({ lang }) {
               </p>
             </div>
           )}
+
           <button
             type="submit" disabled={loading}
             className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px]"
           >
             {loading ? 'Creating account...' : t(lang, 'register')}
           </button>
+
           {form.role === 'verifier' && (
             <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5 text-center">
-              Verifier accounts require admin approval before you can vouch for workers. You will be notified once approved.
+              Verifier accounts require admin approval before you can vouch for workers.
             </p>
           )}
         </form>
@@ -119,21 +142,6 @@ export default function Register({ lang }) {
           {t(lang, 'alreadyAccount')}{' '}
           <Link to="/login" className="text-emerald-600 font-medium">{t(lang, 'loginHere')}</Link>
         </p>
-
-        {/* Google sign-in - shown for worker and customer only */}
-        {form.role !== 'verifier' && (
-          <>
-            <div className="flex items-center gap-3 my-4">
-              <div className="flex-1 h-px bg-slate-100" />
-              <span className="text-xs text-slate-400">or</span>
-              <div className="flex-1 h-px bg-slate-100" />
-            </div>
-            <GoogleButton
-              role={form.role}
-              onError={(msg) => setToast({ type: 'error', message: msg })}
-            />
-          </>
-        )}
       </div>
     </div>
   );

@@ -7,12 +7,15 @@ import { t } from '../i18n';
 import Toast from '../components/Toast';
 import GoogleButton from '../components/GoogleButton';
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const googleAvailable   = GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.startsWith('your_');
+
 export default function Login({ lang }) {
   const { login } = useAuth();
   const navigate  = useNavigate();
   const [form, setForm] = useState({ phone: '', password: '' });
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [toast,   setToast]   = useState(null);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -20,7 +23,6 @@ export default function Login({ lang }) {
     try {
       const data = await auth.login(form);
       login(data.user, data.token);
-      // Route to role-specific dashboard
       const dest = { worker: '/worker', verifier: '/verifier', customer: '/find', admin: '/admin' };
       navigate(dest[data.user.role] || '/');
     } catch (err) {
@@ -33,7 +35,9 @@ export default function Login({ lang }) {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
+
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        {/* Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-emerald-50 rounded-2xl mb-3">
             <Shield className="w-6 h-6 text-emerald-500" />
@@ -42,6 +46,22 @@ export default function Login({ lang }) {
           <p className="text-sm text-slate-400 mt-1">Log in to your VouchPass account</p>
         </div>
 
+        {/* Google sign-in */}
+        {googleAvailable && (
+          <>
+            <GoogleButton
+              role="customer"
+              onError={msg => setToast({ type: 'error', message: msg })}
+            />
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px bg-slate-100" />
+              <span className="text-xs text-slate-400 font-medium">or sign in with phone</span>
+              <div className="flex-1 h-px bg-slate-100" />
+            </div>
+          </>
+        )}
+
+        {/* Phone login form */}
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">{t(lang, 'phone')}</label>
@@ -75,18 +95,6 @@ export default function Login({ lang }) {
           {t(lang, 'noAccount')}{' '}
           <Link to="/register" className="text-emerald-600 font-medium">{t(lang, 'registerHere')}</Link>
         </p>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3 my-4">
-          <div className="flex-1 h-px bg-slate-100" />
-          <span className="text-xs text-slate-400">or</span>
-          <div className="flex-1 h-px bg-slate-100" />
-        </div>
-
-        <GoogleButton
-          role="customer"
-          onError={(msg) => setToast({ type: 'error', message: msg })}
-        />
       </div>
     </div>
   );
