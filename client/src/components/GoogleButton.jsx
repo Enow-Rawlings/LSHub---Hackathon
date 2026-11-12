@@ -1,32 +1,84 @@
-import React, { useState } from 'react';
-import { GoogleLogin } from '@react-oauth/google';
+import React, { useState, useEffect } from 'react';
 import { auth } from '../api';
 import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-
 /**
- * "Continue with Google" button using GoogleLogin component.
- * Hidden when VITE_GOOGLE_CLIENT_ID is not set.
- *
- * @param {string} role        - 'worker' | 'customer' | 'verifier'
- * @param {string} inviteCode  - required when role is 'verifier'
- * @param {function} onError   - called with error message string
+ * Google Sign-In button.
+ * Uses the Google Identity Services (GSI) script directly - no dependency
+ * on @react-oauth/google provider being configured.
+ * Always renders. Falls back gracefully if client ID is missing.
  */
 export default function GoogleButton({ role = 'customer', inviteCode = '', onError }) {
-  const { login }  = useAuth();
-  const navigate   = useNavigate();
+  const { login }    = useAuth();
+  const navigate     = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [ready,   setReady]   = useState(false);
 
-  // Don't render if no client ID is configured
-  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.startsWith('your_')) return null;
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
-  const handleSuccess = async (credentialResponse) => {
+  useEffect(() => {
+    if (!clientId || clientId.startsWith('your_')) return;
+
+    // Load the GSI script if not already loaded
+    if (window.google?.accounts) {
+      setReady(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src   = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setReady(true);
+    document.head.appendChild(script);
+  }, [clientId]);
+
+  if (!clientId || clientId.startsWith('your_')) return null;
+
+  const handleClick = () => {
+    if (!ready || !window.google?.accounts) {
+      onError?.('Google Sign-In is not ready yet. Please try again.');
+      return;
+    }
+
     setLoading(true);
+
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback:  handleCredential,
+      auto_select: false,
+    });
+
+    window.google.accounts.id.prompt((notification) => {
+      // If One Tap is suppressed, fall back to popup
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        // Use oauth2 popup flow
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope:     'email profile',
+          callback:  async (tokenResponse) => {
+            if (tokenResponse.error) {
+              onError?.('Google sign-in failed');
+              setLoading(false);
+              return;
+            }
+            await sendToServer({ access_token: tokenResponse.access_token });
+          },
+        });
+        client.requestAccessToken();
+      }
+    });
+  };
+
+  const handleCredential = async (response) => {
+    await sendToServer({ credential: response.credential });
+  };
+
+  const sendToServer = async ({ credential, access_token }) => {
     try {
       const data = await auth.google({
-        credential: credentialResponse.credential,
+        credential: credential || access_token,
         role,
         inviteCode: inviteCode || undefined,
       });
@@ -40,26 +92,27 @@ export default function GoogleButton({ role = 'customer', inviteCode = '', onErr
     }
   };
 
-  if (loading) {
-    return (
-      <div className="w-full flex items-center justify-center gap-3 border border-slate-200 bg-slate-50 text-slate-400 font-semibold py-3 rounded-xl min-h-[48px]">
-        Signing in...
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full flex justify-center">
-      <GoogleLogin
-        onSuccess={handleSuccess}
-        onError={() => onError?.('Google sign-in failed or was cancelled')}
-        useOneTap={false}
-        width="360"
-        text="continue_with"
-        shape="rectangular"
-        theme="outline"
-        logo_alignment="left"
-      />
-    </div>
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={loading}
+      className="w-full flex items-center justify-center gap-3 border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-semibold py-3 rounded-xl min-h-[48px] transition-colors disabled:opacity-60 shadow-sm"
+    >
+      {loading ? (
+        <span className="text-sm text-slate-400">Signing in...</span>
+      ) : (
+        <>
+          {/* Google G logo */}
+          <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          <span className="text-sm">Continue with Google</span>
+        </>
+      )}
+    </button>
   );
 }

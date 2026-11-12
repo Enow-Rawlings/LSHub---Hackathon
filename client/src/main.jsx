@@ -1,17 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { GoogleOAuthProvider } from '@react-oauth/google';
 import './index.css';
 import App from './App.jsx';
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-
-// GoogleOAuthProvider is safe to mount with an empty clientId -
-// the button inside simply won't render if the ID is missing.
+// GoogleOAuthProvider is no longer needed - GoogleButton uses the native
+// Google Identity Services (GSI) script loaded at runtime.
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <App />
-    </GoogleOAuthProvider>
+    <App />
   </React.StrictMode>
 );
