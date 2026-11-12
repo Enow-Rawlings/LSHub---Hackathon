@@ -49,8 +49,8 @@ app.use(cors({
 // Body parser - 100kb limit to prevent large payload attacks
 app.use(express.json({ limit: '100kb' }));
 
-// Handle CORS preflight for all routes
-app.options('*', cors());
+// Handle CORS preflight for all routes (Express 5 requires explicit wildcard syntax)
+app.options('/{*path}', cors());
 
 // ---- Routes ----
 app.get('/health', (req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
