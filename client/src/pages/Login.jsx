@@ -20,8 +20,8 @@ export default function Login({ lang }) {
     try {
       const data = await auth.login(form);
       login(data.user, data.token);
-      // Route to role-specific page
-      const dest = { worker: '/worker', verifier: '/verifier', customer: '/find', admin: '/' };
+      // Route to role-specific dashboard
+      const dest = { worker: '/worker', verifier: '/verifier', customer: '/find', admin: '/admin' };
       navigate(dest[data.user.role] || '/');
     } catch (err) {
       setToast({ type: 'error', message: err.message || 'Login failed' });
