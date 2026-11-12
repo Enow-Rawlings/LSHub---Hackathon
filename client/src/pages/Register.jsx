@@ -97,6 +97,9 @@ export default function Register({ lang }) {
                 value={form.inviteCode} onChange={set('inviteCode')}
                 className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 min-h-[48px]"
               />
+              <p className="text-xs text-slate-400 mt-1.5">
+                Verifier accounts require an invite code issued by VouchPass administrators.
+              </p>
             </div>
           )}
           <button
