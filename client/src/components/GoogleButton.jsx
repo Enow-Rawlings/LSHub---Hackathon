@@ -14,8 +14,8 @@ export default function GoogleButton({ role = 'customer', inviteCode = '', onErr
   const navigate  = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  // Hide the button entirely when Google OAuth is not configured
-  if (!GOOGLE_CLIENT_ID) return null;
+  // Hide the button when Google OAuth is not configured or still has placeholder
+  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('your_google')) return null;
 
   const handleSuccess = async (tokenResponse) => {
     setLoading(true);
