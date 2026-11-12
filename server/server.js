@@ -21,13 +21,36 @@ const PORT = process.env.PORT || 5000;
 
 // ---- Security middleware ----
 app.use(helmet());
+
+// CORS: allow localhost in dev and the deployed Vercel URL in production
+const ALLOWED_ORIGINS = [
+  process.env.CLIENT_URL || 'http://localhost:5173',
+  'http://localhost:5173',
+  'http://localhost:4173', // vite preview
+];
+
+// Also allow any *.vercel.app subdomain for preview deployments
 app.use(cors({
-  origin:      process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (
+      ALLOWED_ORIGINS.includes(origin) ||
+      /\.vercel\.app$/.test(origin) ||
+      /\.onrender\.com$/.test(origin)
+    ) {
+      return callback(null, true);
+    }
+    callback(new Error(`CORS blocked: ${origin}`));
+  },
   credentials: true,
 }));
 
 // Body parser - 100kb limit to prevent large payload attacks
 app.use(express.json({ limit: '100kb' }));
+
+// Handle CORS preflight for all routes
+app.options('*', cors());
 
 // ---- Routes ----
 app.get('/health', (req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
