@@ -12,6 +12,9 @@ const userSchema = new mongoose.Schema(
     language:      { type: String, enum: ['en', 'fr', 'pcm'], default: 'en' },
     phoneVerified: { type: Boolean, default: false },
     isFlagged:     { type: Boolean, default: false },
+    // Verifiers start 'pending' until an admin approves them.
+    // Workers and customers are 'active' on registration.
+    status:        { type: String, enum: ['pending', 'active', 'suspended'], default: 'active' },
     // Google OAuth fields
     googleId:      { type: String, sparse: true, index: true },
     avatar:        { type: String, default: '' }, // URL from Google or Cloudinary

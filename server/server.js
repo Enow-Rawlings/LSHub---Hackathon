@@ -15,6 +15,7 @@ const workerRoutes  = require('./routes/workers');
 const jobRoutes     = require('./routes/jobs');
 const vouchRoutes   = require('./routes/vouches');
 const webChannel    = require('./channels/webChannel');
+const adminRoutes   = require('./routes/admin');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -61,6 +62,7 @@ app.use('/api/workers', searchLimiter); // apply to search specifically
 app.use('/api',         vouchRoutes);   // mounts /api/vouches and /api/skillchecks
 app.use('/api/jobs',    jobRoutes);
 app.use('/api/bot/web', botLimiter, webChannel);
+app.use('/api/admin',  adminRoutes);
 
 // Public passport route at /api/passport/:workerId - delegate to workers router
 app.use('/api/passport', workerRoutes);

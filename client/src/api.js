@@ -103,4 +103,17 @@ export const bot = {
   send: (body) => request('/bot/web', { method: 'POST', body: JSON.stringify(body) }),
 };
 
+// Admin
+export const admin = {
+  stats:            ()     => request('/admin/stats'),
+  pendingVerifiers: ()     => request('/admin/verifiers/pending'),
+  allVerifiers:     ()     => request('/admin/verifiers'),
+  allUsers:         (q)    => request('/admin/users?' + new URLSearchParams(q || {})),
+  approve:          (id)   => request(`/admin/users/${id}/approve`,   { method: 'PUT' }),
+  reject:           (id)   => request(`/admin/users/${id}/reject`,    { method: 'PUT' }),
+  suspend:          (id)   => request(`/admin/users/${id}/suspend`,   { method: 'PUT' }),
+  reinstate:        (id)   => request(`/admin/users/${id}/reinstate`, { method: 'PUT' }),
+  auditLog:         ()     => request('/admin/audit'),
+};
+
 export default { auth, workers, jobs, verifier, bot };

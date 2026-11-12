@@ -12,6 +12,7 @@ import MyJobs           from './pages/MyJobs';
 import WorkerDashboard  from './pages/WorkerDashboard';
 import VerifierDashboard from './pages/VerifierDashboard';
 import Chat             from './pages/Chat';
+import AdminDashboard   from './pages/AdminDashboard';
 
 function RequireAuth({ children, roles }) {
   const { user, isAuth } = useAuth();
@@ -40,6 +41,9 @@ function AppRoutes({ lang, setLang }) {
         } />
         <Route path="/verifier" element={
           <RequireAuth roles={['verifier', 'admin']}><VerifierDashboard lang={lang} /></RequireAuth>
+        } />
+        <Route path="/admin" element={
+          <RequireAuth roles={['admin']}><AdminDashboard /></RequireAuth>
         } />
 
         {/* Catch-all */}

@@ -63,12 +63,15 @@ router.post('/register', validate(registerSchema), async (req, res, next) => {
       if (existingEmail) return res.status(409).json({ error: 'Email already registered' });
     }
 
-    const user  = await User.create({ name, email, phone, password, role });
+    const user  = await User.create({ name, email, phone, password, role,
+      // verifiers must wait for admin approval before they can vouch
+      status: role === 'verifier' ? 'pending' : 'active',
+    });
     const token = signToken(user);
 
     res.status(201).json({
       token,
-      user: { id: user._id, name: user.name, role: user.role, language: user.language, avatar: user.avatar },
+      user: { id: user._id, name: user.name, role: user.role, language: user.language, avatar: user.avatar, status: user.status },
     });
   } catch (err) {
     next(err);
@@ -83,10 +86,18 @@ router.post('/login', validate(loginSchema), async (req, res, next) => {
     const valid = user && (await user.comparePassword(password));
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
+    // Block pending or suspended accounts
+    if (user.status === 'pending') {
+      return res.status(403).json({ error: 'Your account is pending admin approval. You will be notified once approved.' });
+    }
+    if (user.status === 'suspended') {
+      return res.status(403).json({ error: 'Your account has been suspended. Contact support.' });
+    }
+
     const token = signToken(user);
     res.json({
       token,
-      user: { id: user._id, name: user.name, role: user.role, language: user.language, avatar: user.avatar },
+      user: { id: user._id, name: user.name, role: user.role, language: user.language, avatar: user.avatar, status: user.status },
     });
   } catch (err) {
     next(err);

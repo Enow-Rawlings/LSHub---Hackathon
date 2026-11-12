@@ -37,12 +37,12 @@ async function seed() {
   console.log('Collections cleared');
 
   // ---- Admin ----
-  const admin = await User.create({ name: 'Admin VouchPass', email: 'admin@vouchpass.cm', phone: '+237700000001', password: PASS, role: 'admin', phoneVerified: true, createdAt: daysAgo(200) });
+  const admin = await User.create({ name: 'Admin VouchPass', email: 'admin@vouchpass.cm', phone: '+237700000001', password: PASS, role: 'admin', phoneVerified: true, status: 'active', createdAt: daysAgo(200) });
 
   // ---- Verifiers ----
-  const verifier1 = await User.create({ name: 'Pa Tabi', phone: '+237700000010', password: PASS, role: 'verifier', phoneVerified: true, createdAt: daysAgo(180) });
-  const verifier2 = await User.create({ name: 'Mama Ngu', phone: '+237700000011', password: PASS, role: 'verifier', phoneVerified: true, createdAt: daysAgo(160) });
-  const verifier3 = await User.create({ name: 'Engineer Bate', phone: '+237700000012', password: PASS, role: 'verifier', phoneVerified: true, createdAt: daysAgo(140) });
+  const verifier1 = await User.create({ name: 'Pa Tabi', phone: '+237700000010', password: PASS, role: 'verifier', phoneVerified: true, status: 'active', createdAt: daysAgo(180) });
+  const verifier2 = await User.create({ name: 'Mama Ngu', phone: '+237700000011', password: PASS, role: 'verifier', phoneVerified: true, status: 'active', createdAt: daysAgo(160) });
+  const verifier3 = await User.create({ name: 'Engineer Bate', phone: '+237700000012', password: PASS, role: 'verifier', phoneVerified: true, status: 'active', createdAt: daysAgo(140) });
 
   // Verifiers also have worker profiles with a starting score
   const v1profile = await WorkerProfile.create({ user: verifier1._id, trade: 'mechanic',    town: 'Buea',   location: { type: 'Point', coordinates: [TOWNS.buea.lng, TOWNS.buea.lat] },   priceMin: 5000, priceMax: 15000, trustScore: 60, trustLevel: 'Trusted', createdAt: daysAgo(180) });
@@ -195,13 +195,22 @@ async function seed() {
   console.log('\n========================================');
   console.log('DEMO LOGIN CREDENTIALS (password: demo1234)');
   console.log('========================================');
-  console.log('Admin:       phone +237700000001');
-  console.log('Verifiers:   Pa Tabi +237700000010 | Mama Ngu +237700000011 | Engineer Bate +237700000012');
-  console.log('Customers:   Fon Peter +237700000020 | Nkeng Grace +237700000021 | Tita Alain +237700000022 | Bih Sandra +237700000023');
-  console.log('Workers:     Che Francis +237700000030 (electrician, Buea - should be Trusted+)');
-  console.log('             Mbi Daniel +237700000031 (plumber, Limbe)');
-  console.log('             Yong Victor +237700000038 (electrician, Buea - New, low score)');
-  console.log('             Bongfen Elias +237700000043 (electrician, Molyko - Score 0, demo vouch moment)');
+  console.log('ADMIN:       Admin VouchPass  | phone: +237700000001');
+  console.log('             --> Login at /login then go to /admin');
+  console.log('');
+  console.log('Verifiers:   Pa Tabi          | phone: +237700000010  (status: active)');
+  console.log('             Mama Ngu          | phone: +237700000011  (status: active)');
+  console.log('             Engineer Bate     | phone: +237700000012  (status: active)');
+  console.log('');
+  console.log('Customers:   Fon Peter        | phone: +237700000020');
+  console.log('             Nkeng Grace       | phone: +237700000021');
+  console.log('             Tita Alain        | phone: +237700000022');
+  console.log('             Bih Sandra        | phone: +237700000023');
+  console.log('');
+  console.log('Workers:     Che Francis       | phone: +237700000030  (electrician, Buea)');
+  console.log('             Mbi Daniel        | phone: +237700000031  (plumber, Limbe)');
+  console.log('             Yong Victor       | phone: +237700000038  (electrician, Buea - New)');
+  console.log('             Bongfen Elias     | phone: +237700000043  (electrician, Molyko - Score 0, demo vouch)');
   console.log('========================================\n');
 
   await mongoose.disconnect();

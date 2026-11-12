@@ -108,6 +108,11 @@ export default function Register({ lang }) {
           >
             {loading ? 'Creating account...' : t(lang, 'register')}
           </button>
+          {form.role === 'verifier' && (
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5 text-center">
+              Verifier accounts require admin approval before you can vouch for workers. You will be notified once approved.
+            </p>
+          )}
         </form>
 
         <p className="text-center text-sm text-slate-400 mt-5">

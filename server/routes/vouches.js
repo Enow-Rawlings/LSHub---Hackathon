@@ -24,6 +24,16 @@ const skillSchema = z.object({
 // POST /api/vouches - verifier creates a vouch
 router.post('/vouches', authenticate, requireRole('verifier', 'admin'), validate(vouchSchema), async (req, res, next) => {
   try {
+    // Extra guard: pending verifiers cannot vouch even if they have a token
+    if (req.user.role === 'verifier') {
+      const verifierUser = await require('../models/User').findById(req.user.id).select('status');
+      if (verifierUser?.status === 'pending') {
+        return res.status(403).json({ error: 'Your verifier account is pending admin approval' });
+      }
+      if (verifierUser?.status === 'suspended') {
+        return res.status(403).json({ error: 'Your account has been suspended' });
+      }
+    }
     const { workerId, comment } = req.body;
 
     const profile = await WorkerProfile.findById(workerId);

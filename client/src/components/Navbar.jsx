@@ -19,7 +19,7 @@ export default function Navbar({ lang, setLang }) {
     worker:   [{ to: '/worker',   label: t(lang, 'workerDash') }],
     customer: [{ to: '/my/jobs',  label: t(lang, 'myJobs') }],
     verifier: [{ to: '/verifier', label: t(lang, 'verifierDash') }],
-    admin:    [],
+    admin:    [{ to: '/admin',    label: 'Admin' }, { to: '/verifier', label: t(lang, 'verifierDash') }],
   };
 
   const links = user ? (roleLinks[user.role] || []) : [];
